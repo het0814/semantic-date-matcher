@@ -52,14 +52,22 @@ def store_in_moorcheh(user_id: str, combined_text: str) -> str:
         error_detail = f"Failed to store in Moorcheh: {str(e)}"
         print(f"❌ {error_detail}")
         raise HTTPException(status_code=500, detail=error_detail)
+    
+SEARCH_GUIDANCE_PROMPT = (
+    "FIND THE BEST MATCH. The goal is to find the most compatible "
+    "partner profile based on the user's description and, most importantly, "
+    "what they are looking for."
+)    
 
 def search_in_moorcheh(query: str, top_k: int = 10) -> List[Dict[str, Any]]:
     client = get_moorcheh_client()
     
+    guided_query = SEARCH_GUIDANCE_PROMPT + "\n\n" + query
+
     try:
         results = client.search(
             namespaces=[settings.MOORCHEH_NAMESPACE],
-            query=query,
+            query=guided_query,
             top_k=top_k
         )
         
@@ -73,5 +81,10 @@ def search_in_moorcheh(query: str, top_k: int = 10) -> List[Dict[str, Any]]:
 def generate_combined_text(about: str, looking_for: str, interests: List[str]) -> str:
     """Generate combined text for semantic matching"""
     interests_str = ", ".join(interests)
-    combined = f"About: {about}\nLooking For: {looking_for}\nInterests: {interests_str}"
+    combined = (
+        f"User Profile Summary:\n"
+        f"About Myself: {about}. \n"
+        f"I am specifically LOOKING FOR: {looking_for}. \n"
+        f"My core interests include: {interests_str}."
+    )
     return combined
